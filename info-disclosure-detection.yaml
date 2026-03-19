@@ -1,0 +1,88 @@
+id: info-disclosure-detection
+
+info:
+  name: Information Disclosure Detection
+  author: ProjectDiscoveryAI (Optimized by Cybervan)
+  severity: high
+  description: |
+    Detects sensitive information exposure such as debug pages, stack traces, backend errors, and sensitive data leakage in responses.
+  tags: info-disclosure, debug, secrets, misconfig, bugbounty
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}"
+      - "{{BaseURL}}/debug"
+      - "{{BaseURL}}/api"
+      - "{{BaseURL}}/test"
+      - "{{BaseURL}}/dev"
+      - "{{BaseURL}}/internal"
+      - "{{BaseURL}}/error"
+      - "{{BaseURL}}/api/v1"
+      - "{{BaseURL}}/graphql"
+
+    headers:
+      # Dihapus: Host: invalid-host (Agar request benar-benar sampai ke target)
+      # Menggunakan header aneh lain yang aman namun sering memicu error backend:
+      Accept: "application/invalid-type"
+      X-Forwarded-For: "127.0.0.1"
+      User-Agent: "Malformed-Agent/1.0"
+
+    matchers-condition: or
+    matchers:
+      # Matcher 1: Error & Stack Traces
+      - type: regex
+        part: body
+        regex:
+          - '(?i)(Exception|Stack trace|Traceback \(most recent call last\)|Fatal error:|Uncaught Exception|at [a-zA-Z0-9_]+\.java:[0-9]+)'
+
+      # Matcher 2: Server/Connection Errors
+      - type: regex
+        part: body
+        regex:
+          - '(?i)(cURL error [0-9]+|Failed to connect to|Connection refused|Name or service not known|Could not resolve host)'
+
+      # Matcher 3: Debug Mode Frameworks
+      - type: regex
+        part: body
+        regex:
+          - '(?i)(APP_DEBUG=true|Django DEBUG = True|Werkzeug Debugger|Express error handler|Spring Boot Whitelabel Error Page)'
+
+      # Matcher 4: Hardcoded Secrets (Diperbaiki agar mencari format assignment/variabel, bukan kata biasa)
+      - type: regex
+        part: body
+        regex:
+          - '(?i)(DB_PASSWORD|API_KEY|SECRET_KEY|AUTH_TOKEN)\s*[:=]\s*["''][a-zA-Z0-9\-_]{10,}["'']'
+
+      # Matcher 5: Path Traversal / Leakage (Menggunakan single quotes agar \ tidak perlu di-escape berkali-kali)
+      - type: regex
+        part: body
+        regex:
+          - '(?i)(/var/www/html|/home/[a-z0-9]+/public_html|C:\\xampp\\htdocs|C:\\inetpub\\wwwroot)'
+
+    extractors:
+      - type: regex
+        part: body
+        name: stack_traces
+        regex:
+          - '(?i)(Exception|Stack trace|Traceback \(most recent call last\)|Fatal error:|Uncaught Exception)'
+
+      - type: regex
+        part: body
+        name: file_paths
+        regex:
+          - '(?i)(/var/www/[a-zA-Z0-9_/-]+|C:\\xampp\\[a-zA-Z0-9_\\]+|C:\\inetpub\\[a-zA-Z0-9_\\]+)'
+
+      - type: regex
+        part: body
+        name: secrets_leak
+        regex:
+          - '(?i)(DB_PASSWORD|API_KEY|SECRET_KEY|AUTH_TOKEN)\s*[:=]\s*["''][a-zA-Z0-9\-_]+["'']'
+
+    # Konfigurasi level HTTP
+    stop-at-first-match: true
+    redirects: true
+    max-redirects: 2
+    cookie-reuse: true
+    max-size: 5242880
+    # Dihapus: threads: 10 (Karena ini bukan atribut yang valid di dalam blok HTTP)
