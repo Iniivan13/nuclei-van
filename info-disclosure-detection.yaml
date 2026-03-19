@@ -30,11 +30,11 @@ http:
 
     matchers-condition: or
     matchers:
-      # Matcher 1: Error & Stack Traces
+      # Matcher 1: Error & Stack Traces (Diperketat agar mengabaikan HttpException / 404 Error biasa)
       - type: regex
         part: body
         regex:
-          - '(?i)(Exception|Stack trace|Traceback \(most recent call last\)|Fatal error:|Uncaught Exception|at [a-zA-Z0-9_]+\.java:[0-9]+)'
+          - '(?i)(Stack trace:|Traceback \(most recent call last\)|Fatal error:|Uncaught Exception|at [a-zA-Z0-9_/\\]+\.(java|php|js|py|rb):[0-9]+|SQL syntax.*MySQL)'
 
       # Matcher 2: Server/Connection Errors
       - type: regex
@@ -65,7 +65,7 @@ http:
         part: body
         name: stack_traces
         regex:
-          - '(?i)(Exception|Stack trace|Traceback \(most recent call last\)|Fatal error:|Uncaught Exception)'
+          - '(?i)(Stack trace:|Traceback \(most recent call last\)|Fatal error:|Uncaught Exception|at [a-zA-Z0-9_/\\]+\.(java|php|js|py|rb):[0-9]+)'
 
       - type: regex
         part: body
